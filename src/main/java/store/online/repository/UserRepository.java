@@ -10,10 +10,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import store.online.db.DiskArray.FixedStringCodec;
-import store.online.db.DiskArray.IntCodec;
 import store.online.db.DBTableMap;
-import store.online.db.DBTableMap.EntryCodec;
 import store.online.entities.Schema.User;
 
 /**
@@ -35,8 +32,9 @@ public class UserRepository {
 	 * Val: 4-byte int (passwordHash)
 	 */
 	private DBTableMap<String, Integer> open() throws IOException {
-		// TODO: Return a NEW DB Table with a proper EntryCodec and a valid hash function
-		return new DBTableMap<>(USERS_DATABASE, INITIAL_BUCKETS, null, null);
+		// TODO: Return a NEW DB Table with a proper EntrySerializer for user
+		// and a valid hash function
+		return null; // Dummy Return
 	}
 
 	/**
@@ -44,7 +42,6 @@ public class UserRepository {
 	 */
 	public Optional<User> getUser(String username) {
 		// TODO: Get the user by username
-
 		return Optional.empty(); // Dummy return
 	}
 
@@ -55,7 +52,6 @@ public class UserRepository {
 	 */
 	public boolean createUser(User user) {
 		// TODO: Create a new user
-		
 		return false; // Dummy return
 	}
 
@@ -64,7 +60,6 @@ public class UserRepository {
 	 */
 	public boolean deleteUser(String username) {
 		// TODO: Delete user by username
-		
 		return false; // Dummy return
 	}
 
@@ -73,7 +68,6 @@ public class UserRepository {
 	 */
 	public boolean updatePassword(String username, int newHash) {
 		// TODO: Update password by username
-
 		return false; // Dummy return
 	}
 }

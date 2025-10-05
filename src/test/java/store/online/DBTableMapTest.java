@@ -10,9 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import store.online.db.DBTableMap;
 import store.online.db.HashFunction;
-import store.online.db.DBTableMap.EntryCodec;
-import store.online.db.DiskArray.FixedStringCodec;
-import store.online.db.DiskArray.IntCodec;
+import store.online.db.DBTableMap.EntrySerializer;
+import store.online.db.FixedSizeSerializer.*;
 
 class DBTableMapTest {
 
@@ -25,7 +24,7 @@ class DBTableMapTest {
   }
 
   private DBTableMap<String, Integer> newTable(Path file, int cap) throws Exception {
-    var codec = new EntryCodec<String, Integer>(new FixedStringCodec(32), new IntCodec());
+    var codec = new EntrySerializer<String, Integer>(new StringSerializer(32), new IntSerializer());
     return new DBTableMap<>(file, cap, codec, hf());
   }
 

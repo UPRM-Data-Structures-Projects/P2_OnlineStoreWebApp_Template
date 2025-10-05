@@ -5,6 +5,8 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.nio.file.*;
 
+import store.online.db.FixedSizeSerializer.*;
+
 /**
  * 
  * @author Alfredo
@@ -13,57 +15,25 @@ import java.nio.file.*;
  */
 public final class DiskArray<H, E> implements AutoCloseable {
 
-  /**
-   * Fixed-size codec for element type {@code E}.
-   * Encodes/decodes one element at a fixed byte width so the structure remains
-   * truly array-like (O(1) random access).
-   * 
-   * @author Alfredo
-   */
-  public interface FixedCodec<E> {
-    /**
-     * @return the exact number of bytes used per element
-     */
-    public int fixedSize();
-
-    /**
-     * Writes one element at absolute position {@code pos} in the mapped buffer.
-     *
-     * @param buf   mapped buffer (absolute writes recommended)
-     * @param pos   absolute byte offset where the element starts
-     * @param value element to encode
-     */
-    public void write(MappedByteBuffer buf, int pos, E value);
-
-    /**
-     * Reads one element from absolute position {@code pos} in the mapped buffer.
-     *
-     * @param buf mapped buffer
-     * @param pos absolute byte offset where the element starts
-     * @return decoded element
-     */
-    public E read(MappedByteBuffer buf, int pos);
-  }
-
   private static final int PRELUDE = 4; // [capacity : 4 bytes]
 
   private MappedByteBuffer buf;
   private final FileChannel ch;
-  private final FixedCodec<E> blockCodec;
-  private final FixedCodec<H> headerCodec;
+  private final FixedElementSerializer<E> blockSerializer;
+  private final FixedElementSerializer<H> headerSerializer;
 
   public DiskArray(Path path,
       int initialCapacity,
-      FixedCodec<H> headerCodec,
-      FixedCodec<E> blockCodec) throws IOException {
+      FixedElementSerializer<H> headerSerializer,
+      FixedElementSerializer<E> blockSerializer) throws IOException {
     if (initialCapacity < 1)
       throw new IllegalArgumentException("Capacity must be >= 1");
-    if (blockCodec == null)
+    if (blockSerializer == null)
       throw new IllegalArgumentException("Element codec is required");
 
     // Initialize and open file channel to map memory
-    this.blockCodec = blockCodec;
-    this.headerCodec = headerCodec;
+    this.blockSerializer = blockSerializer;
+    this.headerSerializer = headerSerializer;
 
     final boolean existed = Files.exists(path);
 
@@ -74,7 +44,7 @@ public final class DiskArray<H, E> implements AutoCloseable {
         StandardOpenOption.WRITE);
 
     if (!existed || ch.size() < PRELUDE) {
-      long bytes = dataStart() + (long) initialCapacity * blockCodec.fixedSize();
+      long bytes = dataStart() + (long) initialCapacity * blockSerializer.fixedSize();
       ch.truncate(bytes);
       buf = ch.map(FileChannel.MapMode.READ_WRITE, 0, bytes);
       buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -85,7 +55,7 @@ public final class DiskArray<H, E> implements AutoCloseable {
     buf = ch.map(FileChannel.MapMode.READ_WRITE, 0, dataStart());
     buf.order(ByteOrder.LITTLE_ENDIAN);
 
-    long bytes = dataStart() + (long) buf.getInt(0) * blockCodec.fixedSize();
+    long bytes = dataStart() + (long) buf.getInt(0) * blockSerializer.fixedSize();
     buf = ch.map(FileChannel.MapMode.READ_WRITE, 0, bytes);
     buf.order(ByteOrder.LITTLE_ENDIAN);
   }
@@ -103,9 +73,9 @@ public final class DiskArray<H, E> implements AutoCloseable {
    * @return header
    */
   public H header() {
-    if (headerCodec == null)
+    if (headerSerializer == null)
       return null;
-    return headerCodec.read(buf, PRELUDE);
+    return headerSerializer.read(buf, PRELUDE);
   }
 
   /**
@@ -114,9 +84,9 @@ public final class DiskArray<H, E> implements AutoCloseable {
    * @param hdr
    */
   public void setHeader(H hdr) {
-    if (headerCodec == null)
+    if (headerSerializer == null)
       throw new IllegalStateException("No header codec configured for this DiskArray");
-    headerCodec.write(buf, PRELUDE, hdr);
+    headerSerializer.write(buf, PRELUDE, hdr);
   }
 
   /**
@@ -128,8 +98,8 @@ public final class DiskArray<H, E> implements AutoCloseable {
    */
   public E get(int index) {
     check(index);
-    int pos = dataStart() + index * blockCodec.fixedSize();
-    return blockCodec.read(buf, pos);
+    int pos = dataStart() + index * blockSerializer.fixedSize();
+    return blockSerializer.read(buf, pos);
   }
 
   /**
@@ -142,9 +112,9 @@ public final class DiskArray<H, E> implements AutoCloseable {
    */
   public E set(int index, E value) {
     check(index);
-    int pos = dataStart() + index * blockCodec.fixedSize();
-    E prev = blockCodec.read(buf, pos);
-    blockCodec.write(buf, pos, value);
+    int pos = dataStart() + index * blockSerializer.fixedSize();
+    E prev = blockSerializer.read(buf, pos);
+    blockSerializer.write(buf, pos, value);
     return prev;
   }
 
@@ -155,7 +125,7 @@ public final class DiskArray<H, E> implements AutoCloseable {
    * @throws IOException If fails reallocation
    */
   public void grow(int capacity) throws IOException {
-    long newBytes = dataStart() + (long) capacity * blockCodec.fixedSize();
+    long newBytes = dataStart() + (long) capacity * blockSerializer.fixedSize();
     ch.truncate(newBytes);
     ch.force(true);
     buf = ch.map(FileChannel.MapMode.READ_WRITE, 0, newBytes);
@@ -175,7 +145,7 @@ public final class DiskArray<H, E> implements AutoCloseable {
 
   // ---- internals ----
   private int dataStart() {
-    return PRELUDE + (headerCodec != null ? headerCodec.fixedSize() : 0);
+    return PRELUDE + (headerSerializer != null ? headerSerializer.fixedSize() : 0);
   }
 
   private void check(int index) {
@@ -183,64 +153,4 @@ public final class DiskArray<H, E> implements AutoCloseable {
       throw new IndexOutOfBoundsException(index + " of " + capacity());
   }
 
-  // ---------- ready-made codecs ----------
-  public static final class IntCodec implements FixedCodec<Integer> {
-    public int fixedSize() {
-      return 4;
-    }
-
-    public void write(MappedByteBuffer buf, int pos, Integer v) {
-      buf.putInt(pos, v);
-    }
-
-    public Integer read(MappedByteBuffer buf, int pos) {
-      return buf.getInt(pos);
-    }
-  }
-
-  public static final class LongCodec implements FixedCodec<Long> {
-    public int fixedSize() {
-      return 8;
-    }
-
-    public void write(MappedByteBuffer buf, int pos, Long v) {
-      buf.putLong(pos, v);
-    }
-
-    public Long read(MappedByteBuffer buf, int pos) {
-      return buf.getLong(pos);
-    }
-  }
-
-  /** Fixed-size UTF-8 string padded/truncated to N bytes. */
-  public static final class FixedStringCodec implements FixedCodec<String> {
-    private final int width;
-
-    public FixedStringCodec(int width) {
-      this.width = width;
-    }
-
-    public int fixedSize() {
-      return width;
-    }
-
-    public void write(MappedByteBuffer buf, int pos, String s) {
-      byte[] b = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      int n = Math.min(b.length, width);
-      for (int i = 0; i < n; i++)
-        buf.put(pos + i, b[i]);
-      for (int i = n; i < width; i++)
-        buf.put(pos + i, (byte) 0);
-    }
-
-    public String read(MappedByteBuffer buf, int pos) {
-      byte[] b = new byte[width];
-      for (int i = 0; i < width; i++)
-        b[i] = buf.get(pos + i);
-      int n = 0;
-      while (n < width && b[n] != 0)
-        n++;
-      return new String(b, 0, n, java.nio.charset.StandardCharsets.UTF_8);
-    }
-  }
 }
