@@ -79,7 +79,6 @@ public class DBTableMap<K, V> implements DBTable<K, V>, AutoCloseable {
   private static final int EMPTY = 0;
   private static final int FULL = 1;
   private static final int USED = 2;
-  private static final double loadFactor = 0.75;
 
   private HashFunction<K> hashFunction;
   private DiskArray<TableHeader, Entry<K, V>> entries;
@@ -151,18 +150,5 @@ public class DBTableMap<K, V> implements DBTable<K, V>, AutoCloseable {
   @Override
   public void close() throws IOException {
     entries.close();
-  }
-
-  @Override
-  public void print(PrintStream out) {
-    out.printf("[\n");
-    for (int i = 0; i < entries.capacity(); i++) {
-      Entry<K, V> entry = entries.get(i);
-      if (entry.state == FULL) {
-        Entry<K, V> e = entries.get(i);
-        out.printf("(%s, %s),", i, String.valueOf(e.getKey()), String.valueOf(e.getValue()));
-      }
-    }
-    out.printf("]");
   }
 }

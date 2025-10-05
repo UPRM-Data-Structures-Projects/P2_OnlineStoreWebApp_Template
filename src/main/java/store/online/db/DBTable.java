@@ -21,7 +21,7 @@ public interface DBTable<K, V> {
   /**
    * Inserts or replaces the value associated with the given key.
    *
-   * @param key the key to insert or update
+   * @param key   the key to insert or update
    * @param value the value to associate with {@code key}
    */
   void put(K key, V value);
@@ -30,7 +30,8 @@ public interface DBTable<K, V> {
    * Removes the mapping for the given key, if present.
    *
    * @param key the key whose mapping should be removed
-   * @return the previous value associated with {@code key}, or {@code null} if none
+   * @return the previous value associated with {@code key}, or {@code null} if
+   *         none
    */
   V remove(K key);
 
@@ -38,13 +39,16 @@ public interface DBTable<K, V> {
    * Checks whether a mapping exists for the given key.
    *
    * @param key the key to test
-   * @return {@code true} if a value is mapped to {@code key}; {@code false} otherwise
+   * @return {@code true} if a value is mapped to {@code key}; {@code false}
+   *         otherwise
    */
   boolean containsKey(K key);
 
   /**
    * Returns a snapshot view of all keys currently stored.
-   * <p>The returned list's mutability and live-ness are implementation-defined.</p>
+   * <p>
+   * The returned list's mutability and live-ness are implementation-defined.
+   * </p>
    *
    * @return a list of all keys in the table (may be empty, never {@code null})
    */
@@ -52,7 +56,9 @@ public interface DBTable<K, V> {
 
   /**
    * Returns a snapshot view of all values currently stored.
-   * <p>The returned list's mutability and live-ness are implementation-defined.</p>
+   * <p>
+   * The returned list's mutability and live-ness are implementation-defined.
+   * </p>
    *
    * @return a list of all values in the table (may be empty, never {@code null})
    */
@@ -69,12 +75,4 @@ public interface DBTable<K, V> {
    * Removes all entries from the table.
    */
   void clear();
-
-  /**
-   * Prints a human-readable representation of the table for debugging.
-   * <p>Output format is implementation-defined and may change.</p>
-   *
-   * @param out the destination stream (e.g., {@link System#out})
-   */
-  void print(PrintStream out); /* For debugging purposes */
 }
