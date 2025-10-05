@@ -3,8 +3,6 @@
  */
 package store.online.service;
 
-import java.util.function.Predicate;
-
 import org.springframework.stereotype.Service;
 
 import store.online.entities.Schema.Product;
@@ -41,7 +39,7 @@ public class ProductsService {
    * @return List of products
    */
   public List<Product> getProductsByCategory(String category) {
-    return filter(p -> p.category.equals(category));
+    return productsRepo.getProductsByCategory(category);
   }
 
   /**
@@ -54,17 +52,7 @@ public class ProductsService {
     if (q == null || q.isBlank())
       return new ArrayList<>();
     String needle = q.toLowerCase();
-    return filter(p -> p.name != null && p.name.toLowerCase().contains(needle));
-  }
-
-  private List<Product> filter(Predicate<Product> pred) {
-    List<Product> all = productsRepo.getProducts();
-    List<Product> out = new ArrayList<>();
-    for (Product p : all) {
-      if (pred.test(p))
-        out.add(p);
-    }
-    return out;
+    return productsRepo.searchByName(needle);
   }
 
   /**

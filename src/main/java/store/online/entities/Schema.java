@@ -8,7 +8,7 @@ public class Schema {
   }
 
   public static final class Product {
-    public int id;
+    public int id; // Unique ID
     public float price;
     public String name;
     public String category;

@@ -38,7 +38,9 @@ public class UserRepository {
 	}
 
 	/**
-	 * Returns the user (username + stored passwordHash) if present.
+	 * Gets a user by a given username.
+	 * 
+	 * @return Optional<User>
 	 */
 	public Optional<User> getUser(String username) {
 		// TODO: Get the user by username
@@ -56,7 +58,9 @@ public class UserRepository {
 	}
 
 	/**
-	 * Optional convenience: delete a user.
+	 * Deletes a user by a given username
+	 * 
+	 * @return true if deleted, false otherwise
 	 */
 	public boolean deleteUser(String username) {
 		// TODO: Delete user by username
@@ -64,7 +68,9 @@ public class UserRepository {
 	}
 
 	/**
-	 * Optional: update passwordHash in-place (upsert style).
+	 * Updates a user's password hash
+	 * 
+	 * @return true if updated, false otherwise
 	 */
 	public boolean updatePassword(String username, int newHash) {
 		// TODO: Update password by username

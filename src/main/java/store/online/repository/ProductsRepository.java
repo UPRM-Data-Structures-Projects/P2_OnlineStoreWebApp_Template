@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import store.online.db.DBTableMap;
 import store.online.entities.Schema;
+import store.online.entities.Schema.Product;
 import store.online.utils.list.ArrayList;
 import store.online.utils.list.List;
 
@@ -93,5 +94,27 @@ public class ProductsRepository {
 		} catch (IOException ioe) {
 			return false;
 		}
+	}
+
+	/**
+	 * Gets all the products of a given category
+	 * 
+	 * @param category
+	 * @return List<Product>
+	 */
+	public List<Product> getProductsByCategory(String category) {
+		// TODO: Implement products by category
+		return new ArrayList<>(); // Dummy Return
+	}
+
+	/**
+	 * Searches the products that have similar name
+	 * 
+	 * @param name
+	 * @return List<Product>
+	 */
+	public List<Product> searchByName(String name) {
+		// TODO: Implement search product by name
+		return new ArrayList<>();
 	}
 }
